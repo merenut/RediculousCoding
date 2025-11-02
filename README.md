@@ -18,7 +18,7 @@
 
 ### 🎨 **Visual Effects**
 - **Blips** - Colorful animations when typing with optional character labels
-- **Booms** - Dramatic explosions when deleting code  
+- **Booms** - Dramatic explosions when deleting
 - **Screen Shake** - Gentle editor jitter that responds to your typing intensity
 - **Newline Animations** - Special effects for line breaks
 - **Fireworks** - Celebration animations when you level up!

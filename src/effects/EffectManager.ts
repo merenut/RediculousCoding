@@ -290,7 +290,7 @@ export class EffectManager {
     const pngUri = vscode.Uri.joinPath(dir, `${kind}.png`);
     const tscnText = fs.readFileSync(tscnUri.fsPath, 'utf8');
     const pngB64 = Buffer.from(fs.readFileSync(pngUri.fsPath)).toString('base64');
-
+    
     // Parse AtlasTextures regions by id
     const atlasMap = new Map<string, { x: number; y: number; w: number; h: number }>();
     const atlasBlocks = [...tscnText.matchAll(/\[sub_resource\s+type="AtlasTexture"\s+id="(.*?)"\][\s\S]*?region\s*=\s*Rect2\(([^\)]*)\)/g)];
@@ -299,6 +299,7 @@ export class EffectManager {
       const nums = m[2].split(',').map(s => parseFloat(s.trim()));
       if (nums.length >= 4) atlasMap.set(id, { x: nums[0], y: nums[1], w: nums[2], h: nums[3] });
     }
+    //
     // Parse SpriteFrames order and speed
     const framesOrder: string[] = [];
     const animBlock = tscnText.match(/\[sub_resource\s+type="SpriteFrames"[\s\S]*?animations\s*=\s*\[(\{[\s\S]*?\})\][\s\S]*?\n/);

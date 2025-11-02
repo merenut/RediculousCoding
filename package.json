@@ -2,8 +2,13 @@
   "name": "ridiculous-coding",
   "displayName": "Ridiculous Coding",
   "description": "Make your coding experience 1000x more ridiculous in VS Code: blips, booms, fireworks, XP and levels. Inspired by the Godot Rediculous Coding plugin by jotson.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "Merenut",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/merenut/RediculousCoding.git"
+  },
   "license": "MIT",
   "engines": {
     "vscode": "^1.84.0"
