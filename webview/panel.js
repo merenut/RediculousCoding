@@ -7,6 +7,7 @@
     chars: document.getElementById("chars"),
     shake: document.getElementById("shake"),
     sound: document.getElementById("sound"),
+    nativeSound: document.getElementById("nativeSound"),
     fireworks: document.getElementById("fireworks"),
     reducedEffects: document.getElementById("reducedEffects"),
     levelLabel: document.getElementById("levelLabel"),
@@ -14,18 +15,21 @@
     barInner: document.getElementById("barInner"),
     resetBtn: document.getElementById("resetBtn"),
     testFireworks: document.getElementById("testFireworks"),
-    fwCanvas: document.getElementById("fwCanvas")
+    fwCanvas: document.getElementById("fwCanvas"),
+    soundNotice: document.getElementById("soundNotice")
   };
 
-  // WebAudio engine using decoded WAV buffers
+  // WebAudio engine using decoded WAV buffers (used when nativeSound is disabled)
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   let actx = null;
   const buffers = { blip: null, boom: null, fireworks: null };
   let audioUnlocked = false;
+
   async function fetchArrayBuffer(url) {
     const res = await fetch(url);
     return await res.arrayBuffer();
   }
+
   async function preloadSounds(uris) {
     try {
       actx = actx || new AudioCtx();
@@ -36,16 +40,20 @@
       }
     } catch {}
   }
+
   async function unlockAudio() {
     if (audioUnlocked) return;
     try {
       actx = actx || new AudioCtx();
       if (actx.state === 'suspended') await actx.resume();
       audioUnlocked = true;
-      const n = document.getElementById('soundNotice');
-      if (n) n.remove();
+      // Hide notice when audio is unlocked
+      if (els.soundNotice) {
+        els.soundNotice.remove();
+      }
     } catch {}
   }
+
   function playWav(kind, opts = {}) {
     try {
       if (!audioUnlocked || !buffers[kind]) return;
@@ -110,16 +118,33 @@
   };
 
   // Wire toggles
-  ["explosions", "blips", "chars", "shake", "sound", "fireworks", "reducedEffects"].forEach(key => {
+  ["explosions", "blips", "chars", "shake", "sound", "nativeSound", "fireworks", "reducedEffects"].forEach(key => {
     els[key].addEventListener("change", () => {
       vscode.postMessage({ type: "toggle", key, value: els[key].checked });
+      // Update sound notice visibility when nativeSound or sound toggles change
+      if (key === "nativeSound" || key === "sound") {
+        updateSoundNotice();
+      }
     });
   });
 
+  function updateSoundNotice() {
+    if (!els.soundNotice) return;
+
+    // Show notice only if:
+    // - Sound is enabled AND
+    // - Native sound is disabled (using webview audio) AND
+    // - Audio hasn't been unlocked yet
+    if (els.sound.checked && !els.nativeSound.checked && !audioUnlocked) {
+      els.soundNotice.style.display = "block";
+    } else {
+      els.soundNotice.style.display = "none";
+    }
+  }
+
   els.resetBtn.addEventListener("click", () => vscode.postMessage({ type: "resetXp" }));
   els.testFireworks.addEventListener("click", () => {
-    // Play sound if enabled (same as real fireworks)
-    if (els.sound.checked) playBeep(0.5);
+    // Just trigger fireworks visually - sound is handled by backend
     fw.start();
   });
 
@@ -142,12 +167,19 @@
         els.chars.checked = msg.settings.chars;
         els.shake.checked = msg.settings.shake;
         els.sound.checked = msg.settings.sound;
+        els.nativeSound.checked = msg.settings.nativeSound;
         els.fireworks.checked = msg.settings.fireworks;
         els.reducedEffects.checked = msg.settings.reducedEffects;
-  preloadSounds({ blip: msg.soundUris.blip, boom: msg.soundUris.boom, fireworks: msg.soundUris.fireworks });
-  // Unlock audio on first interaction
-  document.addEventListener('click', unlockAudio, { once: true });
-  document.addEventListener('keydown', unlockAudio, { once: true });
+
+        // Preload webview sounds (for when nativeSound is disabled)
+        preloadSounds({ blip: msg.soundUris.blip, boom: msg.soundUris.boom, fireworks: msg.soundUris.fireworks });
+        // Unlock audio on first interaction
+        document.addEventListener('click', unlockAudio, { once: true });
+        document.addEventListener('keydown', unlockAudio, { once: true });
+
+        // Update sound notice visibility based on initial settings
+        updateSoundNotice();
+
         setState(msg);
         break;
       case "state":

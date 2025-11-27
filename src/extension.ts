@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { EffectManager } from "./effects/EffectManager";
 import { XPService } from "./xp/XPService";
 import { PanelViewProvider } from "./view/PanelViewProvider";
+import { NativeSoundPlayer } from "./sound/NativeSoundPlayer";
 import { PanelMessageFromExt, Settings } from "./types";
 
 export function activate(context: vscode.ExtensionContext) {
@@ -14,6 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
     shakeAmplitude: cfg.get("shakeAmplitude", 6),
     shakeDecayMs: cfg.get("shakeDecayMs", 120),
     sound: cfg.get("sound", true),
+    nativeSound: cfg.get("nativeSound", true),
     fireworks: cfg.get("fireworks", true),
     baseXp: cfg.get("leveling.baseXp", 50),
     enableStatusBar: cfg.get("enableStatusBar", true),
@@ -22,9 +24,11 @@ export function activate(context: vscode.ExtensionContext) {
 
   const xp = new XPService(context, settings.baseXp);
   const effects = new EffectManager(context);
+  const nativeSoundPlayer = new NativeSoundPlayer(context);
   const panelProvider = new PanelViewProvider(context);
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(PanelViewProvider.viewType, panelProvider)
+    vscode.window.registerWebviewViewProvider(PanelViewProvider.viewType, panelProvider),
+    { dispose: () => nativeSoundPlayer.dispose() }
   );
 
   // Status bar
@@ -43,8 +47,6 @@ export function activate(context: vscode.ExtensionContext) {
     status.show();
   }
   updateStatus();
-  // One-time panel reveal to help unlock audio on first sound attempt
-  let revealedForSound = false;
 
   // Commands
   context.subscriptions.push(
@@ -54,7 +56,17 @@ export function activate(context: vscode.ExtensionContext) {
       pushState();
       updateStatus();
       if (settings.fireworks) {
-        post({ type: "fireworks", enabled: settings.sound });
+        // Play fireworks sound and show visual
+        if (settings.sound) {
+          if (settings.nativeSound) {
+            nativeSoundPlayer.play("fireworks");
+            post({ type: "fireworks", enabled: false }); // Visual only
+          } else {
+            post({ type: "fireworks", enabled: true }); // Visual + webview sound
+          }
+        } else {
+          post({ type: "fireworks", enabled: false }); // Visual only, no sound
+        }
       }
     }),
     vscode.commands.registerCommand("ridiculousCoding.toggleExplosions", () => toggle("explosions")),
@@ -62,6 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("ridiculousCoding.toggleChars", () => toggle("chars")),
     vscode.commands.registerCommand("ridiculousCoding.toggleShake", () => toggle("shake")),
     vscode.commands.registerCommand("ridiculousCoding.toggleSound", () => toggle("sound")),
+    vscode.commands.registerCommand("ridiculousCoding.toggleNativeSound", () => toggle("nativeSound")),
     vscode.commands.registerCommand("ridiculousCoding.toggleFireworks", () => toggle("fireworks")),
     vscode.commands.registerCommand("ridiculousCoding.toggleReducedEffects", () => toggle("reducedEffects"))
   );
@@ -73,6 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
       chars: "chars",
       shake: "shake",
       sound: "sound",
+      nativeSound: "nativeSound",
       fireworks: "fireworks",
       baseXp: "leveling.baseXp",
       enableStatusBar: "enableStatusBar",
@@ -99,6 +113,7 @@ export function activate(context: vscode.ExtensionContext) {
         shakeAmplitude: cfg.get("shakeAmplitude", 6),
         shakeDecayMs: cfg.get("shakeDecayMs", 120),
         sound: cfg.get("sound", true),
+        nativeSound: cfg.get("nativeSound", true),
         fireworks: cfg.get("fireworks", true),
         baseXp: cfg.get("leveling.baseXp", 50),
         enableStatusBar: cfg.get("enableStatusBar", true),
@@ -158,20 +173,38 @@ export function activate(context: vscode.ExtensionContext) {
           : undefined;
 
       if (isInsert && settings.blips && !settings.reducedEffects) {
-        if (settings.sound && !revealedForSound) {
-          revealedForSound = true;
-          panelProvider.reveal();
-        }
         effects.showBlip(editor, settings.chars, settings.shake, charLabel);
         pitchIncrease += 1.0;
         if (pitchResetTimer) clearTimeout(pitchResetTimer);
         pitchResetTimer = setTimeout(() => { pitchIncrease = 0; }, PITCH_RESET_MS);
-        // Sound via panel (disabled in reduced effects mode)
-        const pitch = 1.0 + Math.min(20, pitchIncrease) * 0.05; // cap growth
-        post({ type: "blip", pitch, enabled: settings.sound && !settings.reducedEffects });
+
+        // Sound handling - Native or Webview
+        if (settings.sound && !settings.reducedEffects) {
+          const pitch = 1.0 + Math.min(20, pitchIncrease) * 0.05; // cap growth
+          if (settings.nativeSound) {
+            // Native sound with pitch variant files
+            nativeSoundPlayer.play("blip", pitch);
+          } else {
+            // Webview sound with real-time pitch shifting
+            post({ type: "blip", pitch, enabled: true });
+          }
+        }
+
         // XP (always gained, even in reduced effects)
         const leveled = xp.addXp(1);
-        if (leveled && settings.fireworks && !settings.reducedEffects) post({ type: "fireworks", enabled: settings.sound && !settings.reducedEffects });
+        if (leveled && settings.fireworks && !settings.reducedEffects) {
+          // Play fireworks sound and show visual
+          if (settings.sound) {
+            if (settings.nativeSound) {
+              nativeSoundPlayer.play("fireworks");
+              post({ type: "fireworks", enabled: false }); // Visual only
+            } else {
+              post({ type: "fireworks", enabled: true }); // Visual + webview sound
+            }
+          } else {
+            post({ type: "fireworks", enabled: false }); // Visual only, no sound
+          }
+        }
         pushState();
         updateStatus();
       } else if (isInsert) {
@@ -181,7 +214,15 @@ export function activate(context: vscode.ExtensionContext) {
         updateStatus();
       } else if (isDelete && settings.explosions && !settings.reducedEffects) {
         effects.showBoom(editor, settings.chars, settings.shake, charLabel);
-        post({ type: "boom", enabled: settings.sound && !settings.reducedEffects });
+
+        // Sound handling - Native or Webview
+        if (settings.sound && !settings.reducedEffects) {
+          if (settings.nativeSound) {
+            nativeSoundPlayer.play("boom");
+          } else {
+            post({ type: "boom", enabled: true });
+          }
+        }
         pushState();
       }
 

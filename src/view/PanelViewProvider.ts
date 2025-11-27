@@ -77,6 +77,7 @@ export class PanelViewProvider implements vscode.WebviewViewProvider {
       shakeAmplitude: cfg.get("shakeAmplitude", 6),
       shakeDecayMs: cfg.get("shakeDecayMs", 120),
       sound: cfg.get("sound", true),
+      nativeSound: cfg.get("nativeSound", true),
       fireworks: cfg.get("fireworks", true),
       baseXp: cfg.get("leveling.baseXp", 50),
       enableStatusBar: cfg.get("enableStatusBar", true),
@@ -93,6 +94,7 @@ export class PanelViewProvider implements vscode.WebviewViewProvider {
       shakeAmplitude: "shakeAmplitude",
       shakeDecayMs: "shakeDecayMs",
       sound: "sound",
+      nativeSound: "nativeSound",
       fireworks: "fireworks",
       baseXp: "leveling.baseXp",
       enableStatusBar: "enableStatusBar",
@@ -136,13 +138,14 @@ export class PanelViewProvider implements vscode.WebviewViewProvider {
 
     <section class="card">
       <h2 class="card-title">Effects</h2>
-      <div class="notice" id="soundNotice" role="button" tabindex="0" title="Click to enable sound">🔊 Click anywhere in this panel to enable sound</div>
+      <div class="notice" id="soundNotice" role="button" tabindex="0" title="Click to enable sound">🔊 Click anywhere in this panel to enable sound (webview mode)</div>
       <div class="toggles">
         <label class="toggle-pill"><input id="explosions" type="checkbox"><span>Explosions</span></label>
         <label class="toggle-pill"><input id="blips" type="checkbox"><span>Blips</span></label>
         <label class="toggle-pill"><input id="chars" type="checkbox"><span>Char labels</span></label>
         <label class="toggle-pill"><input id="shake" type="checkbox"><span>Shake</span></label>
         <label class="toggle-pill"><input id="sound" type="checkbox"><span>Sound</span></label>
+        <label class="toggle-pill" title="Use native OS audio (instant, no click needed, uses pitch variants)"><input id="nativeSound" type="checkbox"><span>Native Sound</span></label>
         <label class="toggle-pill"><input id="fireworks" type="checkbox"><span>Fireworks</span></label>
         <label class="toggle-pill"><input id="reducedEffects" type="checkbox"><span>Reduced Effects</span></label>
       </div>

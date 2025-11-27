@@ -63,6 +63,11 @@
           "default": true,
           "description": "Play sounds for blips, booms, and fireworks from the panel."
         },
+        "ridiculousCoding.nativeSound": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use native OS audio (recommended). Bypasses Chromium's autoplay policy but removes pitch variation. Disable to use webview audio with pitch variation (requires clicking the panel first)."
+        },
         "ridiculousCoding.fireworks": {
           "type": "boolean",
           "default": true,
@@ -166,6 +171,10 @@
       {
         "command": "ridiculousCoding.toggleSound",
         "title": "Ridiculous Coding: Toggle Sound"
+      },
+      {
+        "command": "ridiculousCoding.toggleNativeSound",
+        "title": "Ridiculous Coding: Toggle Native Sound"
       },
       {
         "command": "ridiculousCoding.toggleFireworks",

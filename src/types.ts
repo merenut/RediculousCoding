@@ -3,7 +3,7 @@ export type Settings = {
   blips: boolean;
   chars: boolean;
   shake: boolean;
-  // UI toggles don’t expose amplitude/decay for now; still include for typing
+  // UI toggles don't expose amplitude/decay for now; still include for typing
   // and message payload completeness if needed later
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
@@ -11,6 +11,7 @@ export type Settings = {
   // @ts-ignore
   shakeDecayMs?: number;
   sound: boolean;
+  nativeSound: boolean; // Use native OS sound instead of webview (bypasses autoplay policy)
   fireworks: boolean;
   baseXp: number;
   enableStatusBar: boolean;
