@@ -512,7 +512,7 @@ export class EffectManager {
         deco = vscode.window.createTextEditorDecorationType({
           isWholeLine: true,
           rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
-          textDecoration: `none; position: relative; left: ${x}px; top: ${y}px;`
+          textDecoration: `none; transform: translate(${x}px, ${y}px);`
         });
         this.shakeDecoCache.set(key, deco);
       }
